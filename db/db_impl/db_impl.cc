@@ -107,6 +107,7 @@
 #include "util/stop_watch.h"
 #include "util/string_util.h"
 #include "utilities/trace/replayer_impl.h"
+#include "util/profile_points.h"
 
 namespace ROCKSDB_NAMESPACE {
 
@@ -6143,3 +6144,45 @@ void DBImpl::RecordSeqnoToTimeMapping() {
 }
 
 }  // namespace ROCKSDB_NAMESPACE
+std::string pp_names[NUM_PP] = {
+    //"mutex_lock",
+  //"rwmutex_rlock",
+  //"rwmutex_wlock",
+    "get_db_lock",
+    "put_db_lock",
+  "memtable_rlock",
+  "memtable_wlock",
+    "writer_wait",
+  "writer_blocking_wait",
+  "writer_critical_section"
+};
+
+thread_local struct profile_point_arr pps;
+struct atomic_profile_point_arr pps_global;
+
+void print_profile_points(void) {
+    printf("--- profile points ---\n");
+    for (int pp = 0; pp < NUM_PP; ++pp) {
+        printf("%s nr[%lu] total[%lfus] avg[%lfus]\n", pp_names[pp].c_str(),
+          pps_global.arr[pp].nr.load(), pps_global.arr[pp].time_us.load(),
+          pps_global.arr[pp].time_us.load() / pps_global.arr[pp].nr.load());
+    }
+}
+
+void clear_profile_points(void) {
+  memset(&pps, 0, sizeof(pps));
+}
+
+void report_profile_points(void) {
+  for (int pp = 0; pp < NUM_PP; ++pp) {
+    auto &_pp = pps_global.arr[pp];
+    _pp.nr.fetch_add(pps.arr[pp].nr);
+    for (double n = _pp.time_us.load(); !_pp.time_us.compare_exchange_strong(n, n + pps.arr[pp].time_us);)
+      ;
+  }
+}
+
+void profile_add(int pp, double time_us) {
+    ++(pps.arr[pp].nr);
+    pps.arr[pp].time_us += time_us;
+}

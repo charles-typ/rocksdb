@@ -4,7 +4,7 @@ ifndef DISABLE_JEMALLOC
 	ifdef JEMALLOC
 		PLATFORM_CXXFLAGS += -DROCKSDB_JEMALLOC -DJEMALLOC_NO_DEMANGLE
 	endif
-	EXEC_LDFLAGS := $(JEMALLOC_LIB) $(EXEC_LDFLAGS) -lpthread
+	EXEC_LDFLAGS := $(JEMALLOC_LIB) $(EXEC_LDFLAGS) 
 	PLATFORM_CXXFLAGS += $(JEMALLOC_INCLUDE)
 endif
 
@@ -13,6 +13,7 @@ ifneq ($(USE_RTTI), 1)
 endif
 
 CFLAGS += -Wstrict-prototypes
+CXXFLAGS += -g -O0
 
 .PHONY: clean librocksdb
 
