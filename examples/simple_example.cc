@@ -37,7 +37,7 @@ void generate_random_chars(char *buffer, size_t size) {
 }
 
 /* rocksdb */
-#define MEMTABLE_SIZE (1L << 29)
+#define MEMTABLE_SIZE (1L << 31)
 #define NUM_MEMTABLE 1
 #define BLK_CACHE_SIZE (64L << 20)
 #define BLK_CACHE_SIZE_MB (BLK_CACHE_SIZE >> 20)
@@ -47,8 +47,8 @@ void generate_random_chars(char *buffer, size_t size) {
 /* ycsb */
 #define MAX_VALUE_SIZE 1024
 #define MAX_LINE_SIZE (MAX_VALUE_SIZE + 256)
-#define MAX_LOAD_OP_NUM 8000000UL
-#define MAX_RUN_OP_NUM 8000000UL
+#define MAX_LOAD_OP_NUM 1000000UL
+#define MAX_RUN_OP_NUM 1000000UL
 #define LOWER_DATASET_FACTOR 1
 #define MAX_FILE_LEN 64
 
@@ -59,7 +59,7 @@ void generate_random_chars(char *buffer, size_t size) {
 #define MIND_NUM_MAX_THREAD (MIND_MAX_THREAD * MIND_MAX_BLADE)
 
 /* profile */
-#define PRINT_ROCKSDB_PROFILE_POINTS
+//#define PRINT_ROCKSDB_PROFILE_POINTS
 // #define PROFILE_LATENCY_CDF
 #ifdef PROFILE_LATENCY_CDF
 #define CDF_BUCKET_NUM 512
@@ -415,32 +415,63 @@ static void *run_rocksdb_ycsb(void *args) {
 #ifdef DISABLE_CONCURRENT_INSERT
   sleep(blade_id * 30);
 #endif
-  int pid = getpid();
-  //int cpid = fork();
+  err = 0;
+  print_period = num_op / 10;
+  Status s;
+  ReadOptions ropts;
+  WriteOptions wopts;
+  ropts.verify_checksums = false;
+  wopts.disableWAL = true;
+  string read_value;
+  // auto t_start = std::chrono::high_resolution_clock::now();
+  struct timeval tv1, tv2;
+  // struct timeval tv_begin;
+  // gettimeofday(&tv_begin, NULL);
 
-  //if (cpid != 0) {
-   // setpgid(cpid, 0);
+  // warm up
+  //for (uint64_t i = 0; i < num_op; i++) {
+  //  if (oplist[i].opcode == YCSB_READ) {
+  //    s = db->Get(ropts, to_string(oplist[i].key), &read_value);
+  //    if (!s.ok() && !s.IsNotFound()) {
+  //      std::printf("%s\n", s.ToString().c_str());
+  //    } else if (s.IsNotFound()) {
+  //      std::printf("Key is not found!\n");
+  //    }
+  //    //        } else if (oplist[i].opcode == YCSB_UPDATE) {
+  //    //            gettimeofday(&tv1, NULL);
+  //    //            s = db->Put(wopts, to_string(oplist[i].key),
+  //    //            string(oplist[i].value)); gettimeofday(&tv2, NULL); t_tot
+  //    //            += timediff_in_ms(&tv1, &tv2);
+  //    // #ifdef PROFILE_LATENCY_CDF
+  //    //            ++(t_args->put_cdf[latency_to_bkt(timediff_in_us(&tv1,
+  //    //            &tv2))]);
+  //    // #endif
+  //    //            if (!s.ok() && !s.IsNotFound()) {
+  //    //                std::printf("%s\n", s.ToString().c_str());
+  //    //            }
+  //  } else {
+  //    printf("unexpected opcode[%d]\n", oplist[i].opcode);
+  //  }
+  //  //if (i % print_period == 0) {
+  //  //  printf("%lu ops done\n", i);
+  //  //}
+  //}
+  //if (mlock(oplist, num_op * sizeof(struct hash_test_ycsb_ops)) == -1) {
+  //  perror("mlock failed");
+  //  exit(EXIT_FAILURE);
+  //}
+
+  int pid = getpid();
+  int cpid = fork();
+
+  if (cpid != 0) {
+    sleep(5);
+    setpgid(cpid, 0);
     // run oplist
-    err = 0;
-    print_period = num_op / 10;
-    Status s;
-    ReadOptions ropts;
-    WriteOptions wopts;
-    ropts.verify_checksums = false;
-    wopts.disableWAL = true;
-    string read_value;
-    // auto t_start = std::chrono::high_resolution_clock::now();
-    struct timeval tv1, tv2;
-    // struct timeval tv_begin;
-    // gettimeofday(&tv_begin, NULL);
     for (uint64_t i = 0; i < num_op; i++) {
       if (oplist[i].opcode == YCSB_READ) {
         gettimeofday(&tv1, NULL);
         s = db->Get(ropts, to_string(oplist[i].key), &read_value);
-        // std::cout << "Read value is: " << read_value << std::endl;
-        // std::printf("Key to find is %s\n", to_string(oplist[i].key));
-        // std::cout << "Key to find is: " << to_string(oplist[i].key) << "
-        // original value is: " << oplist[i].key << std::endl;
         gettimeofday(&tv2, NULL);
         t_tot += timediff_in_ms(&tv1, &tv2);
 #ifdef PROFILE_LATENCY_CDF
@@ -466,9 +497,9 @@ static void *run_rocksdb_ycsb(void *args) {
       } else {
         printf("unexpected opcode[%d]\n", oplist[i].opcode);
       }
-      if (i % print_period == 0) {
-        printf("%lu ops done\n", i);
-      }
+      //if (i % print_period == 0) {
+      //  printf("%lu ops done\n", i);
+      //}
     }
     // struct timeval tv_end;
     // gettimeofday(&tv_end, NULL);
@@ -479,6 +510,12 @@ static void *run_rocksdb_ycsb(void *args) {
     std::chrono::duration<double, std::milli> t_double = t_end - t_start;
     t_args->res_time_in_ms = t_tot = t_double.count();
     */
+    //std::cout << "Perf isn't killed yet" << std::endl;
+    //sleep(5);
+    kill(-cpid, SIGINT);
+    sleep(5);
+    //std::cout << "Perf should be killed" << std::endl;
+    //sleep(5);
 
     report_profile_points();
 
@@ -491,13 +528,12 @@ static void *run_rocksdb_ycsb(void *args) {
     // clean up memory
     free((char *)val);
 
-    //kill(-cpid, SIGINT);
     return NULL;
- // } else {
- //   char buf[50];
- //   sprintf(buf, "perf stat -p %d   > stat.log 2>&1", pid);
- //   execl("/bin/sh", "sh", "-c", buf, NULL);
- // }
+  } else {
+    char buf[50];
+    sprintf(buf, "perf stat -p %d   > stat.log 2>&1", pid);
+    execl("/bin/sh", "sh", "-c", buf, NULL);
+  }
 }
 
 static int launch_workers(int num_node, int num_thread, char *load_file,
