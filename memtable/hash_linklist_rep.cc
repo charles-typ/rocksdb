@@ -19,6 +19,7 @@
 #include "rocksdb/slice_transform.h"
 #include "rocksdb/utilities/options_type.h"
 #include "util/hash.h"
+#include "util/profile_points.h"
 
 namespace ROCKSDB_NAMESPACE {
 namespace {
@@ -731,7 +732,7 @@ size_t HashLinkListRep::ApproximateMemoryUsage() {
 
 void HashLinkListRep::Get(const LookupKey& k, void* callback_args,
                           bool (*callback_func)(void* arg, const char* entry)) {
-  std::cout << "Hashtable get here: " << std::endl;
+  PROFILE_START(get)
   auto transformed = transform_->Transform(k.user_key());
   Pointer& bucket = GetBucket(transformed);
 
@@ -757,6 +758,7 @@ void HashLinkListRep::Get(const LookupKey& k, void* callback_args,
       }
     }
   }
+  PROFILE_LEAVE(get)
 }
 
 MemTableRep::Iterator* HashLinkListRep::GetIterator(Arena* alloc_arena) {
