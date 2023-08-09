@@ -1994,6 +1994,7 @@ bool DBImpl::ShouldReferenceSuperVersion(const MergeContext& merge_context) {
 
 Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
                        GetImplOptions& get_impl_options) {
+    PROFILE_START(PP_CHECK)
   assert(get_impl_options.value != nullptr ||
          get_impl_options.merge_operands != nullptr ||
          get_impl_options.columns != nullptr);
@@ -2054,12 +2055,14 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
     }
   }
 
+  PROFILE_LEAVE(PP_CHECK)
   // Acquire SuperVersion
   SuperVersion* sv = GetAndRefSuperVersion(cfd);
 
   TEST_SYNC_POINT("DBImpl::GetImpl:1");
   TEST_SYNC_POINT("DBImpl::GetImpl:2");
 
+  PROFILE_START(PP_SNAPSHOT)
   SequenceNumber snapshot;
   if (read_options.snapshot != nullptr) {
     if (get_impl_options.callback) {
@@ -2107,6 +2110,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
     read_cb.Refresh(snapshot);
     get_impl_options.callback = &read_cb;
   }
+  PROFILE_LEAVE(PP_SNAPSHOT)
   TEST_SYNC_POINT("DBImpl::GetImpl:3");
   TEST_SYNC_POINT("DBImpl::GetImpl:4");
 
@@ -2186,6 +2190,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
   }
   TEST_SYNC_POINT("DBImpl::GetImpl:PostMemTableGet:0");
   TEST_SYNC_POINT("DBImpl::GetImpl:PostMemTableGet:1");
+  PROFILE_START(PP_MEMTABLE_MISS)
   PinnedIteratorsManager pinned_iters_mgr;
   if (!done) {
     PERF_TIMER_GUARD(get_from_output_files_time);
@@ -2200,7 +2205,9 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
         get_impl_options.get_value);
     RecordTick(stats_, MEMTABLE_MISS);
   }
+  PROFILE_LEAVE(PP_MEMTABLE_MISS)
 
+  PROFILE_START(PP_POST_PROCESS_TIME)
   {
     PERF_TIMER_GUARD(get_post_process_time);
 
@@ -2286,6 +2293,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
 
     RecordInHistogram(stats_, BYTES_PER_READ, size);
   }
+  PROFILE_LEAVE(PP_POST_PROCESS_TIME)
   return s;
 }
 
@@ -6146,13 +6154,10 @@ void DBImpl::RecordSeqnoToTimeMapping() {
 }  // namespace ROCKSDB_NAMESPACE
 std::string pp_names[NUM_PP] = {
     "hash_table_get",
-    "get_db_lock",
-    "put_db_lock",
-  "memtable_rlock",
-  "memtable_wlock",
-    "writer_wait",
-  "writer_blocking_wait",
-  "writer_critical_section"
+    "get_check",
+    "get_snapshot",
+  "get_memtable_miss",
+  "get_post_process_time"
 };
 
 thread_local struct profile_point_arr pps;
