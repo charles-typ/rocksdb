@@ -42,14 +42,17 @@ void generate_random_chars(char *buffer, size_t size) {
 #define NUM_MEMTABLE 1
 #define BLK_CACHE_SIZE (64L << 20)
 #define BLK_CACHE_SIZE_MB (BLK_CACHE_SIZE >> 20)
-#define NUM_BUCKET 8000000
+//#define NUM_BUCKET 8000000
+int NUM_BUCKET;
 #define NUM_MEMTABLE_LOCK 1024
 
 /* ycsb */
 #define MAX_VALUE_SIZE 1024
 #define MAX_LINE_SIZE (MAX_VALUE_SIZE + 256)
-#define MAX_LOAD_OP_NUM 8000000UL
-#define MAX_RUN_OP_NUM 8000000UL
+//#define MAX_LOAD_OP_NUM 8000000UL
+int MAX_LOAD_OP_NUM;
+//#define MAX_RUN_OP_NUM 8000000UL
+int MAX_RUN_OP_NUM;
 #define LOWER_DATASET_FACTOR 1
 #define MAX_FILE_LEN 64
 
@@ -624,8 +627,10 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  num_nodes = atoi(argv[arg_node_num]);
-  num_threads_per_node = atoi(argv[arg_thread_num]);
+  MAX_RUN_OP_NUM = MAX_LOAD_OP_NUM = atoi(argv[arg_node_num]);
+  NUM_BUCKET = atoi(argv[arg_thread_num]);
+  num_nodes = 1;
+  num_threads_per_node = 1;
   num_threads_tot = num_nodes * num_threads_per_node;
   db_path = string(argv[arg_db_path]);
   printf("--- Test Configuration ---\n");

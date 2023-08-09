@@ -1,7 +1,7 @@
 
- Performance counter stats for process id '110680':
+ Performance counter stats for process id '112493':
 
-           5772081      major-faults                                                
+                 1      major-faults                                                
 
-    1417.421885305 seconds time elapsed
+       6.418402423 seconds time elapsed
 
