@@ -5,6 +5,7 @@
 //
 
 #include <atomic>
+#include <iostream>
 
 #include "db/memtable.h"
 #include "memory/arena.h"
@@ -239,6 +240,7 @@ HashSkipListRep::HashSkipListRep(const MemTableRep::KeyComparator& compare,
       transform_(transform),
       compare_(compare),
       allocator_(allocator) {
+	std::cout << "Creating hash skip list: " << bucket_size <<std::endl;
   auto mem =
       allocator->AllocateAligned(sizeof(std::atomic<void*>) * bucket_size);
   buckets_ = new (mem) std::atomic<Bucket*>[bucket_size];
@@ -376,6 +378,7 @@ class HashSkipListRepFactory : public MemTableRepFactory {
 MemTableRep* HashSkipListRepFactory::CreateMemTableRep(
     const MemTableRep::KeyComparator& compare, Allocator* allocator,
     const SliceTransform* transform, Logger* /*logger*/) {
+	std::cout << "Creating hash skip list: " << options_.bucket_count <<std::endl;
   return new HashSkipListRep(compare, allocator, transform,
                              options_.bucket_count, options_.skiplist_height,
                              options_.skiplist_branching_factor);

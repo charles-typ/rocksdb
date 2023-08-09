@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -37,18 +38,18 @@ void generate_random_chars(char *buffer, size_t size) {
 }
 
 /* rocksdb */
-#define MEMTABLE_SIZE (1L << 31)
+#define MEMTABLE_SIZE (1L << 34)
 #define NUM_MEMTABLE 1
 #define BLK_CACHE_SIZE (64L << 20)
 #define BLK_CACHE_SIZE_MB (BLK_CACHE_SIZE >> 20)
-#define NUM_BUCKET 10240
+#define NUM_BUCKET 8000000
 #define NUM_MEMTABLE_LOCK 1024
 
 /* ycsb */
 #define MAX_VALUE_SIZE 1024
 #define MAX_LINE_SIZE (MAX_VALUE_SIZE + 256)
-#define MAX_LOAD_OP_NUM 1000000UL
-#define MAX_RUN_OP_NUM 1000000UL
+#define MAX_LOAD_OP_NUM 8000000UL
+#define MAX_RUN_OP_NUM 8000000UL
 #define LOWER_DATASET_FACTOR 1
 #define MAX_FILE_LEN 64
 
@@ -461,13 +462,24 @@ static void *run_rocksdb_ycsb(void *args) {
   //  exit(EXIT_FAILURE);
   //}
 
+  // Swap based page fault
+
   int pid = getpid();
   int cpid = fork();
+ 
 
   if (cpid != 0) {
     sleep(5);
     setpgid(cpid, 0);
     // run oplist
+    //
+    struct rusage usage;
+
+    if (getrusage(RUSAGE_SELF, &usage) != 0) {
+      perror("getrusage");
+      return NULL;
+    }
+    printf("Page fault: %ld\n", usage.ru_majflt);
     for (uint64_t i = 0; i < num_op; i++) {
       if (oplist[i].opcode == YCSB_READ) {
         gettimeofday(&tv1, NULL);
@@ -497,10 +509,16 @@ static void *run_rocksdb_ycsb(void *args) {
       } else {
         printf("unexpected opcode[%d]\n", oplist[i].opcode);
       }
-      //if (i % print_period == 0) {
-      //  printf("%lu ops done\n", i);
-      //}
+      if (i % print_period == 0) {
+        printf("%lu ops done\n", i);
+      }
     }
+
+    if (getrusage(RUSAGE_SELF, &usage) != 0) {
+      perror("getrusage");
+      return NULL;
+    }
+    printf("Page faults: %ld\n", usage.ru_majflt);
     // struct timeval tv_end;
     // gettimeofday(&tv_end, NULL);
     t_args->res_time_in_ms = t_tot;
@@ -530,8 +548,8 @@ static void *run_rocksdb_ycsb(void *args) {
 
     return NULL;
   } else {
-    char buf[50];
-    sprintf(buf, "perf stat -p %d   > stat.log 2>&1", pid);
+    char buf[100];
+    sprintf(buf, "perf stat -e major-faults -p %d   > stat.log 2>&1", pid);
     execl("/bin/sh", "sh", "-c", buf, NULL);
   }
 }

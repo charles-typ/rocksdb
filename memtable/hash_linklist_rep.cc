@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iostream>
 
 #include "db/memtable.h"
 #include "memory/arena.h"
@@ -905,6 +906,7 @@ class HashLinkListRepFactory : public MemTableRepFactory {
 MemTableRep* HashLinkListRepFactory::CreateMemTableRep(
     const MemTableRep::KeyComparator& compare, Allocator* allocator,
     const SliceTransform* transform, Logger* logger) {
+	std::cout << "Creating link list: " << options_.bucket_count <<std::endl;
   return new HashLinkListRep(
       compare, allocator, transform, options_.bucket_count,
       options_.threshold_use_skiplist, options_.huge_page_tlb_size, logger,

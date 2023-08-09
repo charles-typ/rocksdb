@@ -1,14 +1,7 @@
 
- Performance counter stats for process id '92068':
+ Performance counter stats for process id '110680':
 
-         383071.69 msec task-clock                #    0.110 CPUs utilized          
-          26161327      context-switches          #   68.294 K/sec                  
-             12400      cpu-migrations            #   32.370 /sec                   
-          26297281      page-faults               #   68.648 K/sec                  
-      956823760761      cycles                    #    2.498 GHz                    
-      725068798331      instructions              #    0.76  insn per cycle         
-      145999573684      branches                  #  381.129 M/sec                  
-        2601864698      branch-misses             #    1.78% of all branches        
+           5772081      major-faults                                                
 
-    3493.488679181 seconds time elapsed
+    1417.421885305 seconds time elapsed
 

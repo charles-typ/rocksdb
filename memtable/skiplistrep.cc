@@ -4,6 +4,7 @@
 //  (found in the LICENSE.Apache file in the root directory).
 //
 #include <random>
+#include <iostream>
 
 #include "db/memtable.h"
 #include "memory/arena.h"
@@ -362,6 +363,7 @@ std::string SkipListFactory::GetId() const {
 MemTableRep* SkipListFactory::CreateMemTableRep(
     const MemTableRep::KeyComparator& compare, Allocator* allocator,
     const SliceTransform* transform, Logger* /*logger*/) {
+	std::cout << "Creating kip list here!!!! " <<std::endl;
   return new SkipListRep(compare, allocator, transform, lookahead_);
 }
 
