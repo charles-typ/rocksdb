@@ -38,7 +38,7 @@ void generate_random_chars(char *buffer, size_t size) {
 }
 
 /* rocksdb */
-#define MEMTABLE_SIZE (1L << 34)
+#define MEMTABLE_SIZE (1L << 36)
 #define NUM_MEMTABLE 1
 #define BLK_CACHE_SIZE (64L << 20)
 #define BLK_CACHE_SIZE_MB (BLK_CACHE_SIZE >> 20)
@@ -285,6 +285,7 @@ static uint64_t parse_load_ycsb(FILE *fp, uint64_t max_ops, int blade_id,
   int rc;
   WriteOptions wopts;
   wopts.disableWAL = true;
+  int print_period = MAX_LOAD_OP_NUM / 10;
 
   while (op_idx < (max_ops / LOWER_DATASET_FACTOR)) {
     read = getline(&line, &len, fp);
@@ -305,6 +306,9 @@ static uint64_t parse_load_ycsb(FILE *fp, uint64_t max_ops, int blade_id,
             if (!s.ok()) cerr << s.ToString() << endl;
             assert(s.ok());
             actual_load++;
+            if (actual_load % print_period == 0) {
+              printf("%lu ops done\n", actual_load);
+            }
           }
         }
       }
@@ -514,6 +518,11 @@ static void *run_rocksdb_ycsb(void *args) {
       }
       if (i % print_period == 0) {
         printf("%lu ops done\n", i);
+    	if (getrusage(RUSAGE_SELF, &usage) != 0) {
+    	  perror("getrusage");
+    	  return NULL;
+    	}
+    	printf("Intermediate Page faults: %ld\n", usage.ru_majflt);
       }
     }
 
