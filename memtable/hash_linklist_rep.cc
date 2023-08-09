@@ -732,7 +732,7 @@ size_t HashLinkListRep::ApproximateMemoryUsage() {
 
 void HashLinkListRep::Get(const LookupKey& k, void* callback_args,
                           bool (*callback_func)(void* arg, const char* entry)) {
-  PROFILE_START(get)
+  PROFILE_START(PP_GET)
   auto transformed = transform_->Transform(k.user_key());
   Pointer& bucket = GetBucket(transformed);
 
@@ -758,7 +758,7 @@ void HashLinkListRep::Get(const LookupKey& k, void* callback_args,
       }
     }
   }
-  PROFILE_LEAVE(get)
+  PROFILE_LEAVE(PP_GET)
 }
 
 MemTableRep::Iterator* HashLinkListRep::GetIterator(Arena* alloc_arena) {
