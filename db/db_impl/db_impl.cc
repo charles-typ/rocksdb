@@ -6145,9 +6145,7 @@ void DBImpl::RecordSeqnoToTimeMapping() {
 
 }  // namespace ROCKSDB_NAMESPACE
 std::string pp_names[NUM_PP] = {
-    //"mutex_lock",
-  //"rwmutex_rlock",
-  //"rwmutex_wlock",
+    "hash_table_get",
     "get_db_lock",
     "put_db_lock",
   "memtable_rlock",
