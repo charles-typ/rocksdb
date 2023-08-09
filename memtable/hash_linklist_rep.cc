@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iostream>
 
 #include "db/memtable.h"
 #include "memory/arena.h"
@@ -730,6 +731,7 @@ size_t HashLinkListRep::ApproximateMemoryUsage() {
 
 void HashLinkListRep::Get(const LookupKey& k, void* callback_args,
                           bool (*callback_func)(void* arg, const char* entry)) {
+  std::cout << "Hashtable get here: " << std::endl;
   auto transformed = transform_->Transform(k.user_key());
   Pointer& bucket = GetBucket(transformed);
 
