@@ -1994,6 +1994,7 @@ bool DBImpl::ShouldReferenceSuperVersion(const MergeContext& merge_context) {
 
 Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
                        GetImplOptions& get_impl_options) {
+    PROFILE_START(PP_TOTAL_GET)
     PROFILE_START(PP_CHECK)
   assert(get_impl_options.value != nullptr ||
          get_impl_options.merge_operands != nullptr ||
@@ -2294,6 +2295,7 @@ Status DBImpl::GetImpl(const ReadOptions& read_options, const Slice& key,
     RecordInHistogram(stats_, BYTES_PER_READ, size);
   }
   PROFILE_LEAVE(PP_POST_PROCESS_TIME)
+  PROFILE_LEAVE(PP_TOTAL_GET)
   return s;
 }
 
@@ -6157,7 +6159,8 @@ std::string pp_names[NUM_PP] = {
     "get_check",
     "get_snapshot",
   "get_memtable_miss",
-  "get_post_process_time"
+  "get_post_process_time",
+    "db_get"
 };
 
 thread_local struct profile_point_arr pps;

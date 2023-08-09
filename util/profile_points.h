@@ -34,6 +34,7 @@ enum {
     PP_SNAPSHOT,
     PP_MEMTABLE_MISS,
     PP_POST_PROCESS_TIME,
+    PP_TOTAL_GET,
 	NUM_PP
 };
 
