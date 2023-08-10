@@ -308,6 +308,7 @@ static uint64_t parse_load_ycsb(FILE *fp, uint64_t max_ops, int blade_id,
             actual_load++;
             if (actual_load % print_period == 0) {
               printf("%lu ops done\n", actual_load);
+  	      fflush(stdout);
             }
           }
         }
@@ -531,6 +532,9 @@ static void *run_rocksdb_ycsb(void *args) {
         "average latency %.2lf us\n",
         global_thread_id, i, ((double)i / t_tot / 1000), t_tot,
         (double)t_tot / (double)i * 1000);
+        report_profile_points();
+  	print_profile_points();
+        fflush(stdout);
       }
     }
 
