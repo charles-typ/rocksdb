@@ -416,15 +416,16 @@ static void *run_rocksdb_ycsb(void *args) {
 
   clear_profile_points();
   printf(
-      "local profile point cleared by tid[%d], done warm up, sleep 60s, please "
-      "clear kernel profile points\n",
+      "local profile point cleared by tid[%d], done warm up, sleep 120s, please "
+      "reduce memory size\n",
       global_thread_id);
+  sleep(120);
 
 #ifdef DISABLE_CONCURRENT_INSERT
   sleep(blade_id * 30);
 #endif
   err = 0;
-  print_period = num_op / 10;
+  print_period = num_op / 10000;
   Status s;
   ReadOptions ropts;
   WriteOptions wopts;
@@ -524,6 +525,11 @@ static void *run_rocksdb_ycsb(void *args) {
     	}
     	printf("Intermediate Page faults: %ld\n", usage.ru_majflt);
       }
+    printf(
+        "** Intermediate [thread: %d] %lu | %.3lf MOPS, finished in %.2lf ms, "
+        "average latency %.2lf us\n",
+        global_thread_id, i, ((double)i / t_tot / 1000), t_tot,
+        (double)t_tot / (double)i * 1000);
     }
 
     if (getrusage(RUSAGE_SELF, &usage) != 0) {
